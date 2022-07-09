@@ -7,6 +7,7 @@ from random import randint
 
 from memelib import create_meme
 from searches import run_search_by_caption
+from searches import get_random_caption
 
 # image_space = box.schema.space.create('image_space')
 # image_space:create_index('primary', {parts = {1, 'unsigned', is_nullable=false}})
@@ -40,6 +41,9 @@ def set_handler():
     image = request.files.get("image")
     upper_text = request.form.get("upper_text", "")
     lower_text = request.form.get("lower_text", "")
+
+    if not upper_text and not lower_text:
+        upper_text, lower_text = get_random_caption(caption_space)
 
     if not image:
         uid = run_search_by_caption(fulltext_search_space, upper_text + " " + lower_text)

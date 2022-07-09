@@ -1,5 +1,8 @@
 from collections import Counter
+from random import randint
+
 from tarantool import space
+from tarantool import const
 
 
 def run_search_by_caption(fulltext_search_space: space.Space, caption: str) -> int:
@@ -16,3 +19,17 @@ def run_search_by_caption(fulltext_search_space: space.Space, caption: str) -> i
         return uid
 
     return 0
+
+
+def get_random_caption(caption_space: space.Space) -> (str, str):
+    random_id = randint(1, 10000000)
+
+    res = caption_space.select(random_id, limit=1, iterator=const.ITERATOR_GE)
+    if len(res.data) > 0:
+        return res.data[0][1], res.data[0][2]
+
+    res = caption_space.select(random_id, limit=1, iterator=const.ITERATOR_LE)
+    if len(res.data) > 0:
+        return res.data[0][1], res.data[0][2]
+
+    return "", ""
