@@ -6,6 +6,9 @@ from flask import abort, Flask, request, Response, render_template
 from random import randint
 
 from memelib import create_meme
+from memelib import get_most_frequent_color
+from memelib import replace_color_with_vk_color
+
 from searches import run_search_by_caption
 from searches import get_random_caption
 from searches import get_random_image
@@ -51,6 +54,7 @@ def set_handler():
     image = request.files.get("image")
     upper_text = request.form.get("upper_text", "")
     lower_text = request.form.get("lower_text", "")
+    vk_style = request.form.get("vk_style", False)
 
     if not upper_text and not lower_text:
         upper_text, lower_text = get_random_caption(caption_space)
@@ -72,6 +76,11 @@ def set_handler():
         original = base64.b64encode(f).decode("utf-8")
 
     meme = create_meme(original, upper_text, lower_text)
+
+    if vk_style:
+        frequent_color = get_most_frequent_color(meme)
+        meme = replace_color_with_vk_color(meme, frequent_color)
+
     uid = randint(1, 10000000)
 
     image_space.insert((uid, meme, original))

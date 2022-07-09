@@ -11,7 +11,7 @@ def run_search_by_caption(fulltext_search_space: space.Space, caption: str) -> i
     for word in caption.split(' '):
         res = fulltext_search_space.select(word.lower(), index='secondary')
         for row in res.data:
-            for uid in row[1:]:
+            for uid in row[2:]:
                 c[uid] += 1
 
     if len(c) > 0:
