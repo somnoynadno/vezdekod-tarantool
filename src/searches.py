@@ -33,3 +33,17 @@ def get_random_caption(caption_space: space.Space) -> (str, str):
         return res.data[0][1], res.data[0][2]
 
     return "", ""
+
+
+def get_random_image(image_space: space.Space) -> (str, str):
+    random_id = randint(1, 10000000)
+
+    res = image_space.select(random_id, limit=1, iterator=const.ITERATOR_GE)
+    if len(res.data) > 0:
+        return res.data[0][1], res.data[0][2]
+
+    res = image_space.select(random_id, limit=1, iterator=const.ITERATOR_LE)
+    if len(res.data) > 0:
+        return res.data[0][1], res.data[0][2]
+
+    return "", ""

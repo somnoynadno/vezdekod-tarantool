@@ -2,12 +2,13 @@ import base64
 import os
 import tarantool
 
-from flask import abort, Flask, request, Response
+from flask import abort, Flask, request, Response, render_template
 from random import randint
 
 from memelib import create_meme
 from searches import run_search_by_caption
 from searches import get_random_caption
+from searches import get_random_image
 
 # image_space = box.schema.space.create('image_space')
 # image_space:create_index('primary', {parts = {1, 'unsigned', is_nullable=false}})
@@ -24,6 +25,15 @@ caption_space = server.space('caption_space')
 fulltext_search_space = server.space('fulltext_search_space1')
 
 app = Flask(__name__)
+
+
+@app.route("/")
+def index_handler():
+    _, original = get_random_image(image_space)
+    upper_text, lower_text = get_random_caption(caption_space)
+    image = create_meme(original, upper_text, lower_text)
+
+    return render_template('index.html', base64_image=image)
 
 
 @app.route("/get/<meme_id>")
