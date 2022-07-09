@@ -6,19 +6,21 @@ from flask import abort, Flask, request, Response
 from random import randint
 
 from memelib import create_meme
+from searches import run_search_by_caption
 
 # image_space = box.schema.space.create('image_space')
 # image_space:create_index('primary', {parts = {1, 'unsigned', is_nullable=false}})
 # caption_space = box.schema.space.create('caption_space')
 # caption_space:create_index('primary', {parts = {1, 'unsigned', is_nullable=false}})
 # fulltext_search_space = box.schema.space.create('fulltext_search_space')
-# fulltext_search_space:create_index('primary', {parts = {1, 'string', is_nullable=false}})
+# fulltext_search_space:create_index('primary', {parts = {1, 'unsigned', is_nullable=false}})
+# fulltext_search_space:create_index('secondary', {unique = false, parts = {2, 'string', is_nullable=false}})
 
 server = tarantool.connect("localhost", 3301)
 
 image_space = server.space('image_space')
 caption_space = server.space('caption_space')
-fulltext_search_space = server.space('fulltext_search_space')
+fulltext_search_space = server.space('fulltext_search_space1')
 
 app = Flask(__name__)
 
@@ -26,6 +28,8 @@ app = Flask(__name__)
 @app.route("/get/<meme_id>")
 def get_handler(meme_id):
     t = image_space.select(int(meme_id))
+    if len(t.data) == 0:
+        abort(404)
 
     img = base64.b64decode(str(t.data[0][1]))
     return Response(img, mimetype='image/png')
@@ -34,17 +38,26 @@ def get_handler(meme_id):
 @app.route("/set", methods=['POST'])
 def set_handler():
     image = request.files.get("image")
-    if not image:
-        abort(400)
-
-    image.stream.seek(0)
-    f = image.stream.read()
-
-    original = base64.b64encode(f).decode("utf-8")
     upper_text = request.form.get("upper_text", "")
     lower_text = request.form.get("lower_text", "")
-    meme = create_meme(original, upper_text, lower_text)
 
+    if not image:
+        uid = run_search_by_caption(fulltext_search_space, upper_text + " " + lower_text)
+        if uid == 0:
+            return "can't find suitable image in database, please provide one =(", 500
+
+        t = image_space.select(int(uid))
+        if len(t.data) == 0:
+            abort(404)
+
+        original = t.data[0][2]
+    else:
+        image.stream.seek(0)
+        f = image.stream.read()
+
+        original = base64.b64encode(f).decode("utf-8")
+
+    meme = create_meme(original, upper_text, lower_text)
     uid = randint(1, 10000000)
 
     image_space.insert((uid, meme, original))
@@ -52,7 +65,8 @@ def set_handler():
 
     full_caption = (upper_text + " " + lower_text).strip().split(' ')
     for word in full_caption:
-        fulltext_search_space.insert((word, uid))
+        row_id = randint(1, 1000000000)
+        fulltext_search_space.insert((row_id, word.lower(), uid))
 
     return str(uid), 200
 
@@ -74,7 +88,8 @@ def set_json_handler():
 
     full_caption = (upper_text + " " + lower_text).strip().split(' ')
     for word in full_caption:
-        fulltext_search_space.insert((word, uid))
+        row_id = randint(1, 1000000000)
+        fulltext_search_space.insert((row_id, word.lower(), uid))
 
     return str(uid), 200
 
