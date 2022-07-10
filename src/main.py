@@ -5,6 +5,8 @@ import tarantool
 from flask import abort, Flask, request, Response, render_template
 from random import randint
 
+from config import tarantool_host, tarantool_port
+
 from memelib import create_meme
 from memelib import get_most_frequent_color
 from memelib import replace_color_with_vk_color
@@ -13,19 +15,11 @@ from searches import run_search_by_caption
 from searches import get_random_caption
 from searches import get_random_image
 
-# image_space = box.schema.space.create('image_space')
-# image_space:create_index('primary', {parts = {1, 'unsigned', is_nullable=false}})
-# caption_space = box.schema.space.create('caption_space')
-# caption_space:create_index('primary', {parts = {1, 'unsigned', is_nullable=false}})
-# fulltext_search_space = box.schema.space.create('fulltext_search_space')
-# fulltext_search_space:create_index('primary', {parts = {1, 'unsigned', is_nullable=false}})
-# fulltext_search_space:create_index('secondary', {unique = false, parts = {2, 'string', is_nullable=false}})
-
-server = tarantool.connect("localhost", 3301)
+server = tarantool.connect(tarantool_host, tarantool_port)
 
 image_space = server.space('image_space')
 caption_space = server.space('caption_space')
-fulltext_search_space = server.space('fulltext_search_space1')
+fulltext_search_space = server.space('fulltext_search_space')
 
 app = Flask(__name__)
 
@@ -118,5 +112,5 @@ def set_json_handler():
 
 
 if __name__ == "__main__":
-    debug = False if os.getenv("ENV") == "PRODUCTION" else True
-    app.run(host="0.0.0.0", port=8000, debug=debug)
+    debug = False if os.getenv("DEBUG") == "TRUE" else True
+    app.run(host=os.environ.get("HOST", "0.0.0.0"), port=os.environ.get("PORT", 8000), debug=debug)

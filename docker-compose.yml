@@ -1,0 +1,28 @@
+version: "3"
+
+services:
+  tarantool:
+    image: tarantool/tarantool:latest
+    restart: always
+    expose:
+      - 3301
+    networks:
+      - internal_db
+
+  backend:
+    build: .
+    restart: always
+    environment:
+      TARANTOOL_HOST: tarantool
+    ports:
+      - 8000:8000
+    depends_on:
+      - tarantool
+    networks:
+      - default
+      - internal_db
+
+networks:
+  default:
+  internal_db:
+    internal: true
