@@ -1,2 +1,2 @@
-Flask=1.1.2
+Flask==1.1.2
 tarantool==0.9.0
