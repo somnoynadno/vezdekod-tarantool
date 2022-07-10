@@ -90,14 +90,33 @@ def set_handler():
 
 @app.route("/set/json", methods=['POST'])
 def set_json_handler():
+    # ммм люблю копипасту кода))0))
     j = request.json
-    original = j.get("image")
-    if not original:
-        abort(400)
 
+    original = j.get("image")
     upper_text = j.get("upper_text", "")
     lower_text = j.get("lower_text", "")
+    vk_style = j.get("vk_style", False)
+
+    if not upper_text and not lower_text:
+        upper_text, lower_text = get_random_caption(caption_space)
+
+    if not original:
+        uid = run_search_by_caption(fulltext_search_space, upper_text + " " + lower_text)
+        if uid == 0:
+            return "can't find suitable image in database, please provide one =(", 500
+
+        t = image_space.select(int(uid))
+        if len(t.data) == 0:
+            abort(404)
+
+        original = t.data[0][2]
+
     meme = create_meme(original, upper_text, lower_text)
+
+    if vk_style:
+        frequent_color = get_most_frequent_color(meme)
+        meme = replace_color_with_vk_color(meme, frequent_color)
 
     uid = randint(1, 10000000)
     image_space.insert((uid, meme, original))
